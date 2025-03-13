@@ -5,7 +5,26 @@ from rest_framework.response import Response
 from .serializers import TransectionsSerializer
 from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
+from django.template import loader
+from django.http import HttpResponse
 @api_view(['GET','POST'])
+
+
+def expense_home(request):
+     transections=Transection.objects.all().values()
+     template=loader.get_template('expense/home.html')
+     context={
+          "mymembers":transections
+     }
+     return HttpResponse(template.render(context,request))
+
+def expense_details(request,id):
+     transections=Transection.objects.get(id=id)
+     template=loader.get_template('expense/details.html')
+     context={
+          "Transection":transections
+     }
+     return HttpResponse(template.render(context,request))
 def get_transection(request):
      queryset =Transection.objects.all().order_by('-pk')
      serializer = TransectionsSerializer(queryset,many=True)
