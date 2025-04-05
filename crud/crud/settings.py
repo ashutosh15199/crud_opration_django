@@ -11,7 +11,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-
+import os
+import environ
+import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,7 +27,15 @@ SECRET_KEY = 'django-insecure-#%(yu*et844d&s$ffbx9v^s%8-rihhnsipk!dr=wmmw3gfkmg*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+
+
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS = [RENDER_EXTERNAL_HOSTNAME, "localhost", "127.0.0.1"]
+else:
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+
 
 
 # Application definition
@@ -41,6 +51,8 @@ INSTALLED_APPS = [
     'expense',
     'django_extensions', 
     "corsheaders",
+    'rest_framework_simplejwt',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -79,14 +91,11 @@ WSGI_APPLICATION = 'crud.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'transection',
-        'USER':'postgres',
-        'PASSWORD':'123',
-        'HOST': '127.0.0.1',
-        'PORT': '5432', 
-    }
+    'default': dj_database_url.config(
+        default='postgres://postgres:123@127.0.0.1:5432/transection',  # local fallback
+        conn_max_age=600,
+        ssl_require=os.getenv("RENDER", False),  # Only force SSL on Render
+    )
 }
 
 
@@ -124,7 +133,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -135,3 +146,35 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # React frontend URL
     "https://yourfrontenddomain.com",  # Deployed frontend URL
 ]
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
+
+AUTH_USER_MODEL = 'expense.CustomUser'
+
+#email configration
+env = environ.Env()
+env_file = os.path.join(BASE_DIR, ".env")
+
+if os.path.exists(env_file):
+    print(f"✅ Loading environment variables from: {env_file}")
+    environ.Env.read_env(env_file)
+else:
+    print(f"⚠️ WARNING: .env file not found at {env_file}")
+
+print("EMAIL_HOST_USER:", env("EMAIL_HOST_USER", default="Not Set"))
+print("EMAIL_HOST_PASSWORD:", env("EMAIL_HOST_PASSWORD", default="Not Set"))
+# Email settings using environment variables
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

@@ -15,12 +15,29 @@ const Get = ({ onEdit, onDelete }) => {
   }, []);
 
   const fetchProducts = async () => {
+    const token = localStorage.getItem("token");
+  
+    if (!token) {
+      setError("❌ Unauthorized: Please login to view this content.");
+      setLoading(false);
+      return;
+    }
+  
     try {
       setLoading(true);
-      const response = await fetch("http://127.0.0.1:8000/api/transections/get/");
+      const response = await fetch("http://127.0.0.1:8000/api/transections/get/", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` // ✅ CORRECT HEADER
+        },
+      });
+  
       if (!response.ok) {
-        throw new Error("Failed to fetch products!");
+        const errData = await response.json();
+        throw new Error(errData.detail || "Failed to fetch products");
       }
+  
       const data = await response.json();
       setProducts(data.data || []);
     } catch (e) {
@@ -29,6 +46,8 @@ const Get = ({ onEdit, onDelete }) => {
       setLoading(false);
     }
   };
+  
+  
 
   const handleDelete = async (id) => {
     try {

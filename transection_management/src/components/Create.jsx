@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Logout from "../pages/Logout";
 
 const Create = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,6 +13,16 @@ const Create = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    if (!token) {
+      setMessage("Please Login!");
+      return;
+    }
+    if (role !== "admin" && role !== "user") {
+      setMessage("❌ You are not authorized to perform this action.");
+      return;
+    }
     setLoading(true);
     setMessage("");
     const requestData = {
@@ -27,6 +38,7 @@ const Create = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
           },
           body: JSON.stringify(requestData),
         }
@@ -50,16 +62,16 @@ const Create = () => {
 
   return (
     <div className="relative">
+      <Logout />
       {/* Blur effect on content when modal is open */}
       <div className={`flex flex-col items-center justify-center   transition-all duration-300 ${isOpen ? "blur-sm" : ""}`}>
         {/* Success/Error Message */}
         {message && (
           <div
-            className={`p-3 text-center mb-4 w-96 rounded-lg ${
-              message.startsWith("✅")
+            className={`p-3 text-center mb-4 w-96 rounded-lg ${message.startsWith("✅")
                 ? "bg-green-100 text-green-700"
                 : "bg-red-100 text-red-700"
-            }`}
+              }`}
           >
             {message}
           </div>
